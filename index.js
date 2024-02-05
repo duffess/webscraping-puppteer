@@ -4,7 +4,7 @@ const fs = require("fs");
 
 const url = "https://www.mercadolivre.com.br/"; // url desejada
 
-const pesquisaPor = "notebook"; // pesquisa desejada
+const pesquisaPor = "ovo de avestruz"; // pesquisa desejada
 
 const nomeArquivo = "resultados.csv";
 
@@ -47,12 +47,12 @@ let contador = 0;
     await pagina.waitForSelector("h1.ui-pdp-title");
 
     const tituloProduto = await pagina.$eval("h1.ui-pdp-title", (element) =>
-      element.textContent.trim()
-    );
+      element.textContent.trim().toUpperCase());
+
     console.log("Título do produto:", tituloProduto);
 
     const precoProduto = await pagina.$eval(
-      ".ui-pdp-price__second-line",
+      ".andes-money-amount__fraction",
       (element) => element.textContent.trim()
     );
     console.log("Preço do produto:", precoProduto);
