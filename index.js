@@ -1,55 +1,74 @@
-const pup = require("puppeteer");
+const pup = require("puppeteer"); // importação do modulo puppeteer
 
-const url = "https://www.mercadolivre.com.br/";
+const fs = require("fs");
 
-const pesquisaPor = "ioiô";
+const url = "https://www.mercadolivre.com.br/"; // url desejada
+
+const pesquisaPor = "notebook"; // pesquisa desejada
+
+const nomeArquivo = "resultados.csv";
 
 let contador = 0;
 
 (async () => {
-    const navegador = await pup.launch({
-        headless: false
-    });
+  const navegador = await pup.launch({
+    headless: true, // headless false significa que o navegador irá aparecer
+  });
 
-    const pagina = await navegador.newPage();
-    console.log('newPage e navegador funcionando!');
+  const pagina = await navegador.newPage(); // criar uma nova pagina
+  console.log("newPage e navegador funcionando!");
 
-    await pagina.goto(url);
+  await pagina.goto(url); // ir para a url
 
-    await pagina.waitForSelector('#cb1-edit');
+  await pagina.waitForSelector("#cb1-edit"); // esperar o seletor de pesquisa carregar
 
-    await pagina.type('#cb1-edit', pesquisaPor);
+  await pagina.type("#cb1-edit", pesquisaPor); // pesquisar o que foi escrito na variavel
 
-    await Promise.all([
-        pagina.waitForNavigation(),
-        pagina.click(".nav-search-btn")
-    ]);
+  await Promise.all([
+    pagina.waitForNavigation(), // espera da pagina ir até a prox pagina
+    pagina.click(".nav-search-btn"), // clique no botao de pesquisa
+  ]);
 
-    await pagina.waitForSelector('.ui-search-result__content');
+  await pagina.waitForSelector(".ui-search-result__content"); // espera do seletor ser carregado
 
-    while (true) {
-        const resultados = await pagina.$$('.ui-search-result__content');
+  let dadosCSV = "Título do Produto,Preço do Produto\n";
 
-        if (contador >= resultados.length) break;
+  while (true) {
+    const resultados = await pagina.$$(".ui-search-result__content");
 
-        const resultado = resultados[contador];
-        const linkProduto = await resultado.$eval('a.ui-search-link', element => element.href);
-        await pagina.goto(linkProduto);
-        await pagina.waitForSelector('h1.ui-pdp-title');
+    if (contador >= resultados.length) break;
 
-        const tituloProduto = await pagina.$eval('h1.ui-pdp-title', element => element.textContent.trim());
-        console.log("Título do produto:", tituloProduto);
+    const resultado = resultados[contador];
+    const linkProduto = await resultado.$eval(
+      "a.ui-search-link",
+      (element) => element.href
+    );
+    await pagina.goto(linkProduto);
+    await pagina.waitForSelector("h1.ui-pdp-title");
 
-        const precoProduto = await pagina.$eval('.ui-pdp-price__second-line', element => element.textContent.trim());
-        console.log("Preço do produto:", precoProduto); 
-        console.log();
-        console.log();
-        console.log();
-        
-        // Volta para a página de resultados de busca
-        await pagina.goBack();
-        contador++;
-    }
+    const tituloProduto = await pagina.$eval("h1.ui-pdp-title", (element) =>
+      element.textContent.trim()
+    );
+    console.log("Título do produto:", tituloProduto);
 
-    await navegador.close();
+    const precoProduto = await pagina.$eval(
+      ".ui-pdp-price__second-line",
+      (element) => element.textContent.trim()
+    );
+    console.log("Preço do produto:", precoProduto);
+    console.log();
+    console.log();
+    console.log();
+
+    dadosCSV += `"${tituloProduto}","${precoProduto}"\n`;
+
+    await pagina.goBack();
+    contador++;
+  }
+
+  await navegador.close();
+
+  fs.writeFileSync(nomeArquivo, dadosCSV, "utf-8");
+
+  console.log("Dados salvos em", nomeArquivo);
 })();
