@@ -1,74 +1,81 @@
-const pup = require("puppeteer"); // importação do modulo puppeteer
-
+const pup = require("puppeteer");
+const express = require("express");
 const fs = require("fs");
+const app = express();
+const port = 3000;
 
-const url = "https://www.mercadolivre.com.br/"; // url desejada
+app.use(express.json());
 
-const pesquisaPor = "ovo de avestruz"; // pesquisa desejada
+app.get("/pesquisar", async (req, res) => {
+  const pesquisaPor = req.query.termo;
 
-const nomeArquivo = "resultados.csv";
-
-let contador = 0;
-
-(async () => {
-  const navegador = await pup.launch({
-    headless: true, // headless false significa que o navegador irá aparecer
-  });
-
-  const pagina = await navegador.newPage(); // criar uma nova pagina
-  console.log("newPage e navegador funcionando!");
-
-  await pagina.goto(url); // ir para a url
-
-  await pagina.waitForSelector("#cb1-edit"); // esperar o seletor de pesquisa carregar
-
-  await pagina.type("#cb1-edit", pesquisaPor); // pesquisar o que foi escrito na variavel
-
-  await Promise.all([
-    pagina.waitForNavigation(), // espera da pagina ir até a prox pagina
-    pagina.click(".nav-search-btn"), // clique no botao de pesquisa
-  ]);
-
-  await pagina.waitForSelector(".ui-search-result__content"); // espera do seletor ser carregado
-
-  let dadosCSV = "Título do Produto,Preço do Produto\n";
-
-  while (true) {
-    const resultados = await pagina.$$(".ui-search-result__content");
-
-    if (contador >= resultados.length) break;
-
-    const resultado = resultados[contador];
-    const linkProduto = await resultado.$eval(
-      "a.ui-search-link",
-      (element) => element.href
+  try {
+    console.log(
+      "Requisição de pesquisa recebida. Termo de pesquisa:",
+      pesquisaPor
     );
-    await pagina.goto(linkProduto);
-    await pagina.waitForSelector("h1.ui-pdp-title");
 
-    const tituloProduto = await pagina.$eval("h1.ui-pdp-title", (element) =>
-      element.textContent.trim().toUpperCase());
+    const navegador = await pup.launch({
+      headless: false,
+    });
 
-    console.log("Título do produto:", tituloProduto);
+    const pagina = await navegador.newPage();
+    await pagina.goto("https://www.mercadolivre.com.br/");
+    await pagina.waitForSelector("#cb1-edit");
+    await pagina.type("#cb1-edit", pesquisaPor);
+    await Promise.all([
+      pagina.waitForNavigation(),
+      pagina.click(".nav-search-btn"),
+    ]);
+    await pagina.waitForSelector(".ui-search-result__content");
 
-    const precoProduto = await pagina.$eval(
-      ".andes-money-amount__fraction",
-      (element) => element.textContent.trim()
-    );
-    console.log("Preço do produto:", precoProduto);
-    console.log();
-    console.log();
-    console.log();
+    let dadosCSV = "Título do Produto,Preço do Produto\n";
 
-    dadosCSV += `"${tituloProduto}","${precoProduto}"\n`;
+    let contador = 0;
 
-    await pagina.goBack();
-    contador++;
+    while (true) {
+      const resultados = await pagina.$$(".ui-search-result__content");
+
+      if (contador >= resultados.length) break;
+
+      const resultado = resultados[contador];
+      const linkProduto = await resultado.$eval(
+        "a.ui-search-link",
+        (element) => element.href
+      );
+      await pagina.goto(linkProduto);
+      await pagina.waitForSelector("h1.ui-pdp-title");
+
+      const tituloProduto = await pagina.$eval("h1.ui-pdp-title", (element) =>
+        element.textContent.trim().toUpperCase()
+      );
+
+      await pagina.waitForSelector("[data-teste-id='price-part']");
+
+
+      const precoProduto = await pagina.$eval(
+        "[data-teste-id='price-part']",
+        (element) => element.textContent.trim()
+      );
+      
+
+      dadosCSV += `"${tituloProduto}","${precoProduto}"\n`;
+
+      await pagina.goBack();
+      contador++;
+    }
+
+    await navegador.close();
+
+    fs.writeFileSync("resultados.csv", dadosCSV, "utf-8");
+
+    res.send({ message: "Pesquisa concluída com sucesso!" });
+  } catch (error) {
+    console.error("Erro ao realizar a pesquisa:", error);
+    res.status(500).send({ error: "Ocorreu um erro ao realizar a pesquisa." });
   }
+});
 
-  await navegador.close();
-
-  fs.writeFileSync(nomeArquivo, dadosCSV, "utf-8");
-
-  console.log("Dados salvos em", nomeArquivo);
-})();
+app.listen(port, () => {
+  console.log(`Servidor rodando em http://localhost:${port}`);
+});
