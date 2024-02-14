@@ -20,25 +20,22 @@ app.get("/pesquisar", async (req, res) => {
     });
 
     const pagina = await navegador.newPage();
-    await pagina.goto("https://www.mercadolivre.com.br/");
+    await pagina.goto(`https://www.mercadolivre.com.br/`);
     await pagina.waitForSelector("#cb1-edit");
     await pagina.type("#cb1-edit", pesquisaPor);
     await Promise.all([
       pagina.waitForNavigation(),
       pagina.click(".nav-search-btn"),
     ]);
-    await pagina.waitForSelector(".ui-search-result__content");
+    await pagina.waitForSelector(
+      ".ui-search-result__content"
+    );
 
     let dadosCSV = "Título do Produto,Preço do Produto\n";
 
-    let contador = 0;
+    const resultados = await pagina.$$(".ui-search-result__content");
 
-    while (true) {
-      const resultados = await pagina.$$(".ui-search-result__content");
-
-      if (contador >= resultados.length) break;
-
-      const resultado = resultados[contador];
+    for (const resultado of resultados) {
       const linkProduto = await resultado.$eval(
         "a.ui-search-link",
         (element) => element.href
@@ -50,19 +47,17 @@ app.get("/pesquisar", async (req, res) => {
         element.textContent.trim().toUpperCase()
       );
 
-      await pagina.waitForSelector("[data-teste-id='price-part']");
-
-
       const precoProduto = await pagina.$eval(
-        "[data-teste-id='price-part']",
+        "andes-money-amount.ui-pdp-price__part.andes-money-amount--cents-superscript.andes-money-amount--compact",
         (element) => element.textContent.trim()
       );
-      
 
       dadosCSV += `"${tituloProduto}","${precoProduto}"\n`;
 
+      console.log(tituloProduto);
+      console.log(precoProduto);
+
       await pagina.goBack();
-      contador++;
     }
 
     await navegador.close();
