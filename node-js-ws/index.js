@@ -15,21 +15,21 @@ app.get("/pesquisar", async (req, res) => {
       pesquisaPor
     );
 
-    const navegador = await pup.launch({
-      headless: false,
-    });
-
+    const navegador = await pup.launch();
     const pagina = await navegador.newPage();
     await pagina.goto(`https://www.mercadolivre.com.br/`);
+    console.log("Página inicial carregada.");
     await pagina.waitForSelector("#cb1-edit");
+    console.log("Campo de pesquisa encontrado.");
     await pagina.type("#cb1-edit", pesquisaPor);
+    console.log("Termo de pesquisa inserido:", pesquisaPor);
     await Promise.all([
       pagina.waitForNavigation(),
       pagina.click(".nav-search-btn"),
     ]);
-    await pagina.waitForSelector(
-      ".ui-search-result__content"
-    );
+    console.log("Pesquisa realizada.");
+    await pagina.waitForSelector(".ui-search-result__content");
+    console.log("Resultados da pesquisa carregados.");
 
     let dadosCSV = "Título do Produto,Preço do Produto\n";
 
@@ -40,24 +40,27 @@ app.get("/pesquisar", async (req, res) => {
         "a.ui-search-link",
         (element) => element.href
       );
+      console.log("Link do produto:", linkProduto);
       await pagina.goto(linkProduto);
+      console.log("Página do produto carregada.");
       await pagina.waitForSelector("h1.ui-pdp-title");
+      console.log("Título do produto encontrado.");
 
       const tituloProduto = await pagina.$eval("h1.ui-pdp-title", (element) =>
         element.textContent.trim().toUpperCase()
       );
+      console.log("Título do produto:", tituloProduto);
 
-      const precoProduto = await pagina.$eval(
-        "andes-money-amount.ui-pdp-price__part.andes-money-amount--cents-superscript.andes-money-amount--compact",
-        (element) => element.textContent.trim()
-      );
+      let precoProduto = "Preço não encontrado";
+      const precoElement = await pagina.waitForSelector("[data-testid='price-part']", { timeout: 5000 }); // Aumentar o tempo de espera para o elemento de preço
+      if (precoElement) {
+        precoProduto = await precoElement.evaluate((element) =>
+          element.textContent.trim()
+        );
+      }
+      console.log("Preço do produto:", precoProduto);
 
       dadosCSV += `"${tituloProduto}","${precoProduto}"\n`;
-
-      console.log(tituloProduto);
-      console.log(precoProduto);
-
-      await pagina.goBack();
     }
 
     await navegador.close();
