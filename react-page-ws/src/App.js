@@ -66,15 +66,11 @@ function App() {
 
   const downloadCSV = () => {
     const link = document.createElement("a");
-    console.log("downloadCSV");
-    link.href = "../../node-js-ws/resultado.csv";
-    console.log("downloadCSV2");
+    link.href = "resultado.csv";
+    console.log(link.href + " link href");
     link.download = "resultados.csv";
-    console.log("downloadCSV3");
-
     document.body.appendChild(link);
     link.click();
-
     document.body.removeChild(link);
   };
 
