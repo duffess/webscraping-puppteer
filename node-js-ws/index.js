@@ -4,6 +4,7 @@ const puppeteer = require("puppeteer");
 const express = require("express");
 const fs = require("fs");
 const cheerio = require("cheerio");
+const path = require('path');
 const app = express();
 const port = 3000;
 const cors = require("cors");
@@ -12,6 +13,13 @@ app.use(cors());
 const url = "https://www.mercadolivre.com.br/";
 
 app.use(express.json());
+
+app.get('/baixar-arquivo', (req, res) => {
+  const filePath = path.join(__dirname, 'resultados.csv');
+  res.download(filePath, 'resultados.csv');
+});
+
+
 
 app.get("/pesquisar", async (req, res) => {
   const pesquisaPor = req.query.termo;

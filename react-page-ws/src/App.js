@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import axios from 'axios';
 import "./App.css";
 
 function PopUp({ onClose }) {
@@ -52,8 +53,8 @@ function App() {
         console.log("Resultados da pesquisa:", data);
         setCarregamento(false);
         setError("");
-        downloadCSV();
-      })
+        handleDownload();
+       })
 
       .catch((error) => {
         console.error("Erro ao fazer a pesquisa:", error);
@@ -64,15 +65,27 @@ function App() {
       });
   };
 
-  const downloadCSV = () => {
-    const link = document.createElement("a");
-    link.href = "resultado.csv";
-    console.log(link.href + " link href");
-    link.download = "resultados.csv";
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
+  const handleDownload = async () => {
+    try {
+        const response = await axios.get('http://localhost:3000/baixar-arquivo', {
+            responseType: 'blob'
+        });
+        const url = window.URL.createObjectURL(new Blob([response.data]));
+
+        const link = document.createElement('a');
+
+        link.href = url;
+
+        link.setAttribute('download', 'resultados.csv');
+
+        document.body.appendChild(link);
+
+        link.click();
+
+    } catch (error) {
+        console.error('Erro ao baixar o arquivo', error);
+    }
+};
 
   const handleClosePopUp = () => {
     setPopUp(false);
