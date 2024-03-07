@@ -1,14 +1,48 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import "./App.css";
+
+function PopUp({ onClose }) {
+  return (
+    <div className="popup-overlay">
+      <div className="popup-content">
+        <p className="cookieHeading">Atenção!</p>
+        <p className="cookieDescription">
+          Ao final do processo, irá acontecer um download direto! Você está de
+          acordo?
+        </p>
+
+        <div className="buttonContainer">
+          <button className="acceptButton" onClick={onClose}>
+            Sim!
+          </button>
+          <button disabled className="declineButton" onClick={onClose}>
+            Não!
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 function App() {
   const [pesquisa, setPesquisa] = useState("");
   const [carregamento, setCarregamento] = useState(false);
   const [error, setError] = useState("");
+  const [popUp, setPopUp] = useState(false);
+
+  useEffect(() => {
+    setPopUp(true);
+  }, []);
 
   const handleInputChange = (event) => {
     setPesquisa(event.target.value);
   };
+
+  function handleKeyPress(event) {
+    if (event.key === "Enter") {
+      handleSubmit();
+    }
+  }
 
   const handleSubmit = () => {
     setCarregamento(true);
@@ -18,7 +52,9 @@ function App() {
         console.log("Resultados da pesquisa:", data);
         setCarregamento(false);
         setError("");
+        downloadCSV();
       })
+
       .catch((error) => {
         console.error("Erro ao fazer a pesquisa:", error);
         setCarregamento(false);
@@ -28,8 +64,27 @@ function App() {
       });
   };
 
+  const downloadCSV = () => {
+    const link = document.createElement("a");
+    console.log("downloadCSV");
+    link.href = "../../node-js-ws/resultado.csv";
+    console.log("downloadCSV2");
+    link.download = "resultados.csv";
+    console.log("downloadCSV3");
+
+    document.body.appendChild(link);
+    link.click();
+
+    document.body.removeChild(link);
+  };
+
+  const handleClosePopUp = () => {
+    setPopUp(false);
+  };
+
   return (
     <div className="app">
+      {popUp && <PopUp onClose={handleClosePopUp} />}
       <main className="main">
         <h1>Web Scraping</h1>
         {error && <p className="error">{error}</p>}
@@ -39,6 +94,7 @@ function App() {
           className="input"
           value={pesquisa}
           onChange={handleInputChange}
+          onKeyPress={handleKeyPress}
           placeholder="Digite sua pesquisa..."
         />
         <button className="buttonInput" onClick={handleSubmit}>

@@ -6,7 +6,9 @@ const fs = require("fs");
 const cheerio = require("cheerio");
 const app = express();
 const port = 3000;
+const cors = require("cors");
 
+app.use(cors());
 const url = "https://www.mercadolivre.com.br/";
 
 app.use(express.json());
@@ -55,8 +57,17 @@ async function extrairDadosProdutos($) {
 
   $(".ui-search-layout__item").each((i, elemento) => {
     // const linkProduto = $(elemento).find(".ui-search-link").attr("href");
-    const tituloProduto = $(elemento).find(".ui-search-item__title").text().trim().toUpperCase();
-    const precoProduto = $(elemento).find("span.andes-money-amount.ui-search-price__part.ui-search-price__part--medium.andes-money-amount--cents-superscript").text().trim();
+    const tituloProduto = $(elemento)
+      .find(".ui-search-item__title")
+      .text()
+      .trim()
+      .toUpperCase();
+    const precoProduto = $(elemento)
+      .find(
+        "span.andes-money-amount.ui-search-price__part.ui-search-price__part--medium.andes-money-amount--cents-superscript"
+      )
+      .text()
+      .trim();
 
     dadosCSV += `"${tituloProduto}","${precoProduto}"\n`;
   });
